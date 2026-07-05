@@ -35,4 +35,43 @@ for i in range(5):
     while True:
         
         check, frame = webcam.read()
+        cv2.imshow("Capturing", frame)
+        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+        rgb_small_frame = small_frame[:, :, ::-1]
+        
+        key = cv2.waitKey(1)
+        
+        if key == ord('s') :
+            face_locations = face_recognition.face_locations(rgb_small_frame)
+            if face_locations != []:
+                
+                # filename="photo.jpg"
+				# cv2.imwrite(filename=filename, img=frame)
+				# image = face_recognition.load_image_file(filename)
+				# image = Image.fromarray(frame)
+				# image = image.convert('RGB')
+
+                face_encoding = face_recognition.face_encodings(frame)[0]
+                if ref_id in embed_dicit in embed_dicit:
+                    embed_dictt[ref_id]+=[face_encoding]
+                else:
+                    embed_dictt[ref_id]=[face_encoding]
+                    
+                webcam.release()
+                # img_new = cv2.imread('saved_img.jpg', cv2.IMREAD_GRAYSCALE)
+				# img_new = cv2.imshow("Captured Image", img_new)
+                cv2.waitKey(1)
+                cv2.destroyAllWindows()
+                break
+        
+        elif key == ord('q'):
+            print("Turning off camera.")
+            webcam.release()
+            print("Camera off.")
+            print("Program ended.")
+            cv2.destroyAllWindows()
+            break
+f=open("ref_embed.pk1", "wb")
+pickle.dump(embed_dictt, f)
+f.close()
     
