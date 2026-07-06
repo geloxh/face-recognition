@@ -1,15 +1,14 @@
 import sys
 
-sys.path.append()
 import cv2
-import face_recognition
+import face_detector
 import pickle
 
 name=input("Enter the Name: ")
 ref_id=input("Enter the ID: ")
 
 try:
-    f=open("ref_name.pk1", "rb")
+    f=open("ref_name.pkl", "rb")
     
     ref_dictt=pickle.load(f)
     f.close()
@@ -17,12 +16,12 @@ except:
     ref_dictt={}
     ref_dictt[ref_id]=name
     
-f=open("ref_name.pk1", "wb")
+f=open("ref_name.pkl", "wb")
 pickle.dump(ref_dictt, f)
 f.close()
 
 try:
-    f=open("ref_embed.pk1", "rb")
+    f=open("ref_embed.pkl", "rb")
     embed_dictt=pickle.load(f)
     f.close()
 
@@ -42,7 +41,7 @@ for i in range(5):
         key = cv2.waitKey(1)
         
         if key == ord('s') :
-            face_locations = face_recognition.face_locations(rgb_small_frame)
+            face_locations = face_detector.face_locations(rgb_small_frame)
             if face_locations != []:
                 
                 # filename="photo.jpg"
@@ -51,8 +50,8 @@ for i in range(5):
 				# image = Image.fromarray(frame)
 				# image = image.convert('RGB')
 
-                face_encoding = face_recognition.face_encodings(frame)[0]
-                if ref_id in embed_dicit in embed_dicit:
+                face_encoding = face_detector.face_encodings(frame)[0]
+                if ref_id in embed_dictt in embed_dictt:
                     embed_dictt[ref_id]+=[face_encoding]
                 else:
                     embed_dictt[ref_id]=[face_encoding]
@@ -71,7 +70,7 @@ for i in range(5):
             print("Program ended.")
             cv2.destroyAllWindows()
             break
-f=open("ref_embed.pk1", "wb")
+f=open("ref_embed.pkl", "wb")
 pickle.dump(embed_dictt, f)
 f.close()
     
