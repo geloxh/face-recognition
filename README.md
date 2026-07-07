@@ -1,0 +1,6 @@
+
+
+
+```bash
+venv\Scripts\activate 
+```
