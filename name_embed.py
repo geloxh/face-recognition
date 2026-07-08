@@ -1,76 +1,59 @@
-import sys
-
 import cv2
-import face_detector
 import pickle
+from deepface import DeepFace
 
-name=input("Enter the Name: ")
-ref_id=input("Enter the ID: ")
-
-try:
-    f=open("ref_name.pkl", "rb")
-    
-    ref_dictt=pickle.load(f)
-    f.close()
-except:
-    ref_dictt={}
-    ref_dictt[ref_id]=name
-    
-f=open("ref_name.pkl", "wb")
-pickle.dump(ref_dictt, f)
-f.close()
+name = input("Enter the Name: ")
+ref_id = input("Enter the ID: ")
 
 try:
-    f=open("ref_embed.pkl", "rb")
-    embed_dictt=pickle.load(f)
-    f.close()
-
+    with open("ref_name.pkl", "rb") as f:
+        ref_dictt = pickle.load(f)
 except:
-    embed_dictt={}
-    
-for i in range(5):
+    ref_dictt = {}
+
+ref_dictt[ref_id] = name
+with open("ref_name.pkl", "wb") as f:
+    pickle.dump(ref_dictt, f)
+
+try:
+    with open("ref_embed.pkl", "rb") as f:
+        embed_dictt = pickle.load(f)
+except:
+    embed_dictt = {}
+
+print("Press 's' to capture face (5 times), 'q' to quit.")
+
+captures = 0
+webcam = cv2.VideoCapture(0)
+
+while captures < 5:
+    check, frame = webcam.read()
+    if not check:
+        break
+
+    cv2.imshow("Capturing", frame)
     key = cv2.waitKey(1)
-    webcam = cv2.VideoCapture(0)
-    while True:
-        
-        check, frame = webcam.read()
-        cv2.imshow("Capturing", frame)
-        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-        rgb_small_frame = small_frame[:, :, ::-1]
-        
-        key = cv2.waitKey(1)
-        
-        if key == ord('s') :
-            face_locations = face_detector.face_locations(rgb_small_frame)
-            if face_locations != []:
-                
-                # filename="photo.jpg"
-				# cv2.imwrite(filename=filename, img=frame)
-				# image = face_recognition.load_image_file(filename)
-				# image = Image.fromarray(frame)
-				# image = image.convert('RGB')
 
-                face_encoding = face_detector.face_encodings(frame)[0]
-                if ref_id in embed_dictt in embed_dictt:
-                    embed_dictt[ref_id]+=[face_encoding]
-                else:
-                    embed_dictt[ref_id]=[face_encoding]
-                    
-                webcam.release()
-                # img_new = cv2.imread('saved_img.jpg', cv2.IMREAD_GRAYSCALE)
-				# img_new = cv2.imshow("Captured Image", img_new)
-                cv2.waitKey(1)
-                cv2.destroyAllWindows()
-                break
-        
-        elif key == ord('q'):
-            print("Turning off camera.")
-            webcam.release()
-            print("Camera off.")
-            print("Program ended.")
-            cv2.destroyAllWindows()
-            break
-f=open("ref_embed.pkl", "wb")
-pickle.dump(embed_dictt, f)
-f.close()
-    
+    if key == ord('s'):
+        result = DeepFace.represent(frame, model_name="Facenet", enforce_detection=False)
+        face_encoding = result[0]["embedding"]
+
+        if ref_id in embed_dictt:
+            embed_dictt[ref_id].append(face_encoding)
+        else:
+            embed_dictt[ref_id] = [face_encoding]
+
+        captures += 1
+        print(f"Captured {captures}/5")
+
+    elif key == ord('q'):
+        print("Cancelled.")
+        break
+
+webcam.release()
+cv2.destroyAllWindows()
+
+with open("ref_embed.pkl", "wb") as f:
+    pickle.dump(embed_dictt, f)
+
+print("Done! Face data saved.")
