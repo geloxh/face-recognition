@@ -1,6 +1,11 @@
 import cv2
 import pickle
-from deepface import DeepFace
+import numpy as np
+import insightface
+from insightface.app import FaceAnalysis
+
+app = FaceAnalysis(name="buffalo_sc")
+app.prepare(ctx_id=0, det_size=(640, 640))
 
 name = input("Enter the Name: ")
 ref_id = input("Enter the ID: ")
@@ -35,16 +40,19 @@ while captures < 5:
     key = cv2.waitKey(1)
 
     if key == ord('s'):
-        result = DeepFace.represent(frame, model_name="Facenet", enforce_detection=False)
-        face_encoding = result[0]["embedding"]
+        faces = app.get(frame)
+        if faces:
+            face_encoding = faces[0].embedding
 
-        if ref_id in embed_dictt:
-            embed_dictt[ref_id].append(face_encoding)
+            if ref_id in embed_dictt:
+                embed_dictt[ref_id].append(face_encoding)
+            else:
+                embed_dictt[ref_id] = [face_encoding]
+
+            captures += 1
+            print(f"Captured {captures}/5")
         else:
-            embed_dictt[ref_id] = [face_encoding]
-
-        captures += 1
-        print(f"Captured {captures}/5")
+            print("No face detected, try again.")
 
     elif key == ord('q'):
         print("Cancelled.")

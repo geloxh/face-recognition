@@ -1,36 +1,31 @@
-import face_recognition
 import pickle
 import os
+import numpy as np
+import cv2
+from insightface.app import FaceAnalysis
 
-# ── Config ──
-FACES_FOLDER = "faces" # folder containing subfolders per person
-OUTPUT_FILE = "ref_name.pkl"  # output pickle file
-# ──
+FACES_FOLDER = "faces"
+
+app = FaceAnalysis(name="buffalo_sc")
+app.prepare(ctx_id=0, det_size=(640, 640))
 
 def generate_encodings():
     known_encodings = []
     known_names = []
-    errors = []
 
-    # check if faces folder exists
     if not os.path.exists(FACES_FOLDER):
         print(f"❌ '{FACES_FOLDER}' folder not found!")
-        print(f"   Create it and add subfolders named after each person.")
-        sys.exit(1)
+        return
 
     persons = os.listdir(FACES_FOLDER)
-
     if not persons:
         print(f"❌ '{FACES_FOLDER}' folder is empty!")
-        print(f"   Add subfolders with face images inside.")
-        sys.exit(1)
+        return
 
     print(f"📁 Found {len(persons)} person(s): {persons}\n")
 
     for person_name in persons:
         person_folder = os.path.join(FACES_FOLDER, person_name)
-
-        # skip if not a folder
         if not os.path.isdir(person_folder):
             continue
 
@@ -38,44 +33,37 @@ def generate_encodings():
         print(f"👤 Processing: {person_name} ({len(images)} image(s))")
 
         for image_file in images:
-            image_path = os.path.join(person_folder, image_file)
-
-            # only process image files
             if not image_file.lower().endswith(('.jpg', '.jpeg', '.png')):
-                print(f"   ⚠️  Skipping non-image file: {image_file}")
+                print(f"   ⚠️  Skipping: {image_file}")
                 continue
 
+            image_path = os.path.join(person_folder, image_file)
             try:
-                # load and encode the face
-                image = face_recognition.load_image_file(image_path)
-                encodings = face_recognition.face_encodings(image)
-
-                if encodings:
-                    known_encodings.append(encodings[0])
+                img = cv2.imread(image_path)
+                faces = app.get(img)
+                if faces:
+                    known_encodings.append(faces[0].embedding)
                     known_names.append(person_name)
                     print(f"   ✅ Encoded: {image_file}")
                 else:
                     print(f"   ⚠️  No face found in: {image_file}")
-                    errors.append(image_path)
-
             except Exception as e:
-                print(f"   ❌ Error processing {image_file}: {e}")
-                errors.append(image_path)
+                print(f"   ❌ Error: {image_file}: {e}")
 
-    # save to pkl
     if known_encodings:
-        with open(OUTPUT_FILE, "wb") as f:
-            pickle.dump((known_encodings, known_names), f)
+        ref_dictt = {name: name for name in set(known_names)}
+        embed_dictt = {}
+        for name, enc in zip(known_names, known_encodings):
+            embed_dictt.setdefault(name, []).append(enc)
 
-        print(f"\n✅ Done! {len(known_encodings)} face(s) saved to '{OUTPUT_FILE}'")
+        with open("ref_name.pkl", "wb") as f:
+            pickle.dump(ref_dictt, f)
+        with open("ref_embed.pkl", "wb") as f:
+            pickle.dump(embed_dictt, f)
+
+        print(f"\n✅ Done! {len(known_encodings)} face(s) saved.")
     else:
-        print("\n❌ No faces encoded. Check your images and try again.")
-
-    # show errors summary
-    if errors:
-        print(f"\n⚠️  {len(errors)} image(s) had issues:")
-        for err in errors:
-            print(f"   - {err}")
+        print("\n❌ No faces encoded.")
 
 if __name__ == "__main__":
     generate_encodings()
