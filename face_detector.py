@@ -26,6 +26,8 @@ face_names = []
 face_boxes = []
 process_this_frame = True
 
+THRESHOLD = 25.0  # tunable — lower = stricter
+
 while True:
     ret, frame = video_capture.read()
     if not ret:
@@ -42,7 +44,9 @@ while True:
 
             if distances:
                 best_index = np.argmin(distances)
-                name = known_face_names[best_index] if distances[best_index] < 1.0 else "Unknown"
+                best_distance = distances[best_index]
+                print(f"Best distance: {best_distance:.4f}")  # debug — check terminal
+                name = known_face_names[best_index] if best_distance < THRESHOLD else "Unknown"
             else:
                 name = "Unknown"
 
